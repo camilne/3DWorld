@@ -23,13 +23,13 @@ public class Mesh
 	
 	public Mesh(Vertex[] vertices, int[] indices)
 	{
-		this(vertices, indices, false);
+		this(vertices, indices, false, false);
 	}
 	
-	public Mesh(Vertex[] vertices, int[] indices, boolean calcNormals)
+	public Mesh(Vertex[] vertices, int[] indices, boolean calcNormals, boolean dynamic)
 	{
 		initMeshData();
-		addVertices(vertices, indices, calcNormals);
+		addVertices(vertices, indices, calcNormals, dynamic);
 	}
 	
 	private void initMeshData()
@@ -39,20 +39,24 @@ public class Mesh
 		size = 0;
 	}
 	
-	private void addVertices(Vertex[] vertices, int[] indices, boolean calcNormals)
+	private void addVertices(Vertex[] vertices, int[] indices, boolean calcNormals, boolean dynamic)
 	{
 		if(calcNormals)
-		{
 			calcNormals(vertices, indices);
-		}
 		
 		size = indices.length;
 		
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		glBufferData(GL_ARRAY_BUFFER, Util.createFlippedBuffer(vertices), GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, Util.createFlippedBuffer(vertices), dynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
 		
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, Util.createFlippedBuffer(indices), GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, Util.createFlippedBuffer(indices), dynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
+	}
+	
+	public void updateVertices(Vertex[] vertices, boolean calcNormals, boolean dynamic)
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+		glBufferData(GL_ARRAY_BUFFER, Util.createFlippedBuffer(vertices), dynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
 	}
 	
 	public void draw()
@@ -155,7 +159,7 @@ public class Mesh
 			Integer[] indexData = new Integer[indices.size()];
 			indices.toArray(indexData);
 			
-			addVertices(vertexData, Util.toIntArray(indexData), true);
+			addVertices(vertexData, Util.toIntArray(indexData), true, false);
 		}
 		catch(Exception e)
 		{

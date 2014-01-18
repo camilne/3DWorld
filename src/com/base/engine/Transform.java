@@ -93,6 +93,11 @@ public class Transform
 	{
 		this.scale = new Vector3f(x, y, z);
 	}
+	
+	public static float getFOV()
+	{
+		return fov;
+	}
 
 	public static Camera getCamera()
 	{

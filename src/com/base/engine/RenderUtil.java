@@ -54,8 +54,6 @@ public class RenderUtil
 		glEnable(GL_DEPTH_TEST);
 		
 		glEnable(GL_DEPTH_CLAMP);
-		
-		//glEnable(GL_TEXTURE_2D);
 	}
 	
 	public static String getOpenGLVersion()

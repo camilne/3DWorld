@@ -72,6 +72,12 @@ public class World
 			load(largestFeature, persistence+.1f);
 		if(Input.getKeyDown(Input.KEY_L))
 			load(largestFeature, persistence-.1f);
+		if(Input.getKeyDown(Input.KEY_LBRACKET))
+			if(viewRange > 0)
+				viewRange--;
+		if(Input.getKeyDown(Input.KEY_RBRACKET))
+			if(viewRange < 20)
+				viewRange++;
 	}
 	
 	public void render(float x, float z)

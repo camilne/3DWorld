@@ -1,0 +1,5 @@
+Using Java Version: 1.7.0_17
+OS: Windows
+Using OpenGL Version: 4.3.0
+Loading Texture: arista.png
+Loading Texture: spritesheet.png

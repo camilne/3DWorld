@@ -1,6 +1,7 @@
 package com.longarmx.smplx.world;
 
 import com.base.engine.Mesh;
+import com.base.engine.TextureRegion;
 import com.base.engine.Vector2f;
 import com.base.engine.Vector3f;
 import com.base.engine.Vertex;
@@ -14,6 +15,7 @@ public class Chunk
 	private int z;
 	private World world;
 	private Vector3f[][] map = new Vector3f[size + 1][size + 1];
+	private byte[][] tiles = new byte[map.length][map[0].length];
 	private Mesh mesh;
 	
 	public Chunk(int x, int z, World world)
@@ -33,6 +35,10 @@ public class Chunk
 			for(int j = 0; j < map[0].length; j++)
 				map[i][j] = new Vector3f(i + x, (float)(world.getNoise(i + x, j + z)), j + z);
 		
+		for(int i = 0; i < tiles.length; i++)
+			for(int j = 0; j < tiles[0].length; j++)
+				tiles[i][j] = 0;
+		
 		index = 0;
 		iindex = 0;
 		Vertex[] vertices = new Vertex[size * size * 4];
@@ -49,7 +55,7 @@ public class Chunk
 			}
 		}
 		
-		mesh = new Mesh(vertices, indices, true);
+		mesh = new Mesh(vertices, indices, true, false);
 	}
 	
 	private void populateMeshData(Vertex[] vertices, int i, int j, int[] indices)
@@ -61,14 +67,17 @@ public class Chunk
 		indices[iindex++] = 1 + index;
 		indices[iindex++] = 3 + index;
 		
-		vertices[index++] = new Vertex(map[i][j], new Vector2f(0, 0));
-		vertices[index++] = new Vertex(map[i + 1][j], new Vector2f(1, 0));
-		vertices[index++] = new Vertex(map[i + 1][j + 1], new Vector2f(1, 1));
-		vertices[index++] = new Vertex(map[i][j + 1], new Vector2f(0, 1));
+		TextureRegion region = Tile.getTile(tiles[i][j]).getRegion();
+		
+		vertices[index++] = new Vertex(map[i][j], region.getSt());
+		vertices[index++] = new Vertex(map[i + 1][j], new Vector2f(region.getU(), region.getT()));
+		vertices[index++] = new Vertex(map[i + 1][j + 1], region.getUv());
+		vertices[index++] = new Vertex(map[i][j + 1], new Vector2f(region.getS(), region.getV()));
 	}
 	
 	public void render()
 	{
+		Tile.getTile(0).getRegion().getTexture().bind();
 		mesh.draw();
 	}
 	

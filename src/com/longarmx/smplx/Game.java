@@ -4,40 +4,47 @@ import com.base.engine.BaseLight;
 import com.base.engine.DirectionalLight;
 import com.base.engine.Input;
 import com.base.engine.Material;
-import com.base.engine.PhongShader;
 import com.base.engine.RenderUtil;
-import com.base.engine.Shader;
 import com.base.engine.Texture;
 import com.base.engine.Transform;
 import com.base.engine.Vector3f;
 import com.base.engine.Window;
+import com.longarmx.smplx.gui.Screen;
+import com.longarmx.smplx.gui.StringRenderer;
 import com.longarmx.smplx.world.World;
 
 public class Game
 {
 	
-	private Shader shader;
+	private WorldShader worldShader;
+	private HudShader hudShader;
 	private Material material;
 	private Transform transform;
+	private Texture fontTexture;
 
 	private World world;
 	private Player player;
+	private Screen hud;
 	
 	public Game()
 	{
-		shader = PhongShader.getInstance();
-		material = new Material(new Texture("grass13.png"), new Vector3f(.1f, .1f, .1f));
+		worldShader = WorldShader.getInstance();
+		hudShader = HudShader.getInstance();
+		material = new Material(null, new Vector3f(.1f, .1f, .1f), 1, 8);
 		transform = new Transform();
 
 		world = new World();
 		player = new Player(world);
+		hud = new Screen();
 		
 		Transform.setProjection(70f, Window.getWidth(), Window.getHeight(), 0.1f, 1000f);
 		Transform.setCamera(player.getCamera());
 		
-		PhongShader.setAmbientLight(new Vector3f(3f, 3f, 3f));
-		PhongShader.setDirectionalLight(new DirectionalLight(new BaseLight(new Vector3f(1,1,1), 10f), new Vector3f(1,1,1)));
-
+		WorldShader.setAmbientLight(new Vector3f(3f, 3f, 3f));
+		WorldShader.setDirectionalLight(new DirectionalLight(new BaseLight(new Vector3f(1,1,1), 10f), new Vector3f(1,1,1)));
+		
+		fontTexture = new Texture("arista.png");
+		StringRenderer.create(fontTexture, "res/arista.fnt");
 	}
 	
 	public void input()
@@ -47,9 +54,12 @@ public class Game
 		
 		if(Input.getKeyDown(Input.KEY_ESCAPE))
 			Main.instance.stop();
+		if(Input.getKeyDown(Input.KEY_LCONTROL))
+			Transform.setProjection(Transform.getFOV() - 40, Window.getWidth(), Window.getHeight(), 0.1f, 1000f);
+		else if(Input.getKeyUp(Input.KEY_LCONTROL))
+			Transform.setProjection(Transform.getFOV() + 40, Window.getWidth(), Window.getHeight(), 0.1f, 1000f);
 	}
 	
-	float temp = 0.0f;
 
 	public void update()
 	{		
@@ -63,16 +73,22 @@ public class Game
 	public void render()
 	{
 		RenderUtil.setClearColor(new Vector3f(119f/255f, 160f/255f, 1));
-		shader.bind();
-		shader.updateUniforms(transform.getTransformation(), transform.getProjectedTransformation(), material);
+		worldShader.bind();
+		worldShader.updateUniforms(transform.getTransformation(), transform.getProjectedTransformation(), material);
 		world.render(player.getPos().getX(), player.getPos().getZ());
+		
+		hudShader.bind();
+		hudShader.updateUniforms(transform.getTransformation(), transform.getProjectedTransformation(), material);
+		hud.render();
 	}
 	
 	
 	
 	public void dispose()
 	{
+		fontTexture.dispose();
 		world.dispose();
+		Spritesheet.dispose();
 	}
 
 }

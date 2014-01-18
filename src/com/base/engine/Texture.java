@@ -1,6 +1,17 @@
 package com.base.engine;
 
-import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL11.GL_NEAREST;
+import static org.lwjgl.opengl.GL11.GL_RGBA;
+import static org.lwjgl.opengl.GL11.GL_RGBA8;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_MAG_FILTER;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_MIN_FILTER;
+import static org.lwjgl.opengl.GL11.GL_UNSIGNED_BYTE;
+import static org.lwjgl.opengl.GL11.glBindTexture;
+import static org.lwjgl.opengl.GL11.glDeleteTextures;
+import static org.lwjgl.opengl.GL11.glGenTextures;
+import static org.lwjgl.opengl.GL11.glTexImage2D;
+import static org.lwjgl.opengl.GL11.glTexParameteri;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -12,7 +23,10 @@ import javax.imageio.ImageIO;
 
 public class Texture
 {
+	private static int boundID = 0;
 	private int id;
+	private int width;
+	private int height;
 	
 	public Texture(String fileName)
 	{
@@ -24,20 +38,27 @@ public class Texture
 		this.id = id;
 	}
 	
+	private Texture(Vector3i vec)
+	{
+		this(vec.getX());
+		width = vec.getY();
+		height = vec.getZ();
+	}
+	
 	public void bind()
 	{
 		glBindTexture(GL_TEXTURE_2D, id);
+		boundID = id;
 	}
 	
-	public int getID()
+	public void dispose()
 	{
-		return id;
+		glBindTexture(GL_TEXTURE_2D, 0);
+		glDeleteTextures(id);
 	}
 	
-	private static int loadTexture(String fileName)
+	private static Vector3i loadTexture(String fileName)
 	{
-		//String[] splitArray = fileName.split("\\.");
-		//String ext = splitArray[splitArray.length - 1];
 		String path = "res" + File.separator + "textures" + File.separator + fileName;
 		
 		try
@@ -56,18 +77,21 @@ public class Texture
 				System.exit(1);
 			}
 			
+			int width = bimg.getWidth();
+			int height = bimg.getHeight();
+			
 			int textureID = glGenTextures();
 			
-			int[] pixels = new int[bimg.getWidth() * bimg.getHeight() * 4];
-			bimg.getRGB(0, 0, bimg.getWidth(), bimg.getHeight(), pixels, 0, bimg.getWidth());
+			int[] pixels = new int[width * height * 4];
+			bimg.getRGB(0, 0, width, height, pixels, 0, width);
 			
 			ByteBuffer buffer = Util.createByteBuffer(pixels.length);
 			
-			for(int y = 0; y < bimg.getHeight(); y++)
+			for(int y = 0; y < height; y++)
 			{
-				for(int x = 0; x < bimg.getWidth(); x++)
+				for(int x = 0; x < width; x++)
 				{
-					int pixel = pixels[y * bimg.getWidth() + x];
+					int pixel = pixels[y * width + x];
 					buffer.put((byte) ((pixel >> 16) & 0xFF));
 					buffer.put((byte) ((pixel >> 8) & 0xFF));
 					buffer.put((byte) (pixel & 0xFF));
@@ -82,9 +106,9 @@ public class Texture
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, bimg.getWidth(), bimg.getHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
 			
-			return textureID;
+			return new Vector3i(textureID, width, height);
 		}
 		catch(Exception e)
 		{
@@ -92,6 +116,27 @@ public class Texture
 			System.exit(1);
 		}
 		
-		return 0;
+		return new Vector3i(0, 1, 1);
+	}
+	
+
+	public int getID()
+	{
+		return id;
+	}
+	
+	public boolean isBound()
+	{
+		return boundID == id;
+	}
+
+	public int getWidth()
+	{
+		return width;
+	}
+
+	public int getHeight()
+	{
+		return height;
 	}
 }

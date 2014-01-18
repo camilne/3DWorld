@@ -15,7 +15,7 @@ public class Component
 	private boolean mouseHover, lastMouseHover;
 	private Vertex[] vertices = new Vertex[4];
 	private Vector2f pos, size;
-	private String name;
+//	private String name;
 	private Mesh mesh;
 	
 	public Component(float x, float y, float width, float height, String name)
@@ -27,7 +27,7 @@ public class Component
 	{
 		this.pos = pos;
 		this.size = size;
-		this.name = name;
+//		this.name = name;
 		
 		vertices[0] = new Vertex(pos.getX(), pos.getY(), 0);
 		vertices[1] = new Vertex(pos.getX() + size.getX(), pos.getY(), 0);

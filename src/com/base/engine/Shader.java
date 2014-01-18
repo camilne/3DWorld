@@ -90,6 +90,11 @@ public class Shader
 				GL20.glBindAttribLocation(program, i, locations[i]);
 	}
 	
+	public void unbind()
+	{
+		glUseProgram(0);
+	}
+	
 	public void updateUniforms(Matrix4f worldMatrix, Matrix4f projectedMatrix, Material material)
 	{
 		
