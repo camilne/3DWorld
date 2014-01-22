@@ -35,7 +35,7 @@ import com.longarmx.smplx.Main;
 
 public class Shader
 {
-	private int program;
+	public int program;
 	private HashMap<String, Integer> uniforms;
 	private boolean depricated = false;
 	
@@ -231,4 +231,5 @@ public class Shader
 	{
 		glUniformMatrix4(uniforms.get(uniformName), true, Util.createFlippedBuffer(value));
 	}
+	
 }

@@ -29,16 +29,9 @@ public class Camera
 	public void input()
 	{
 		if(Input.getKey(Input.KEY_ESCAPE))
-		{
-			Input.setCursor(true);
-			mouseLocked = false;
-		}
+			grabMouse(false	);
 		if(Input.getMouseDown(0))
-		{
-			Input.setMousePosition(centerPosition);
-			Input.setCursor(false);
-			mouseLocked = true;
-		}
+			grabMouse(true);
 		
 		if(Input.getKey(Input.KEY_W))
 			move(getForward(), movAmt);
@@ -66,8 +59,16 @@ public class Camera
 				rotateX(-deltaPos.getY() * sensitivity);
 				
 			if(rotY || rotX)
-				Input.setMousePosition(new Vector2f(Window.getWidth()/2, Window.getHeight()/2));
+				Input.setMousePosition(centerPosition);
 		}
+	}
+	
+	public void grabMouse(boolean flag)
+	{
+		mouseLocked = flag;
+		
+		Input.setMousePosition(centerPosition);
+		Input.setCursor(!flag);
 	}
 	
 	public void move(Vector3f dir, float amt)

@@ -25,7 +25,7 @@ public class Player
 	
 	public void input()
 	{
-		camera.setMovAmt((float)(10 * Time.getDelta()));
+		camera.setMovAmt((float)(10 * Time.getDelta() * (Input.getKey(Input.KEY_Q) ? 10 : 1)));
 		camera.input();
 		
 		if(Input.getKeyDown(Input.KEY_E))

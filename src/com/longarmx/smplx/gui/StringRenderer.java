@@ -6,6 +6,7 @@ import java.util.Scanner;
 
 import com.base.engine.Texture;
 import com.base.engine.TextureRegion;
+import com.longarmx.smplx.Main;
 
 
 public class StringRenderer
@@ -15,7 +16,7 @@ public class StringRenderer
 	// The maximum height of a glyph in the texture
 	public static final int glyphHeight = 55;
 	// The spacing between glyphs when rendering
-	public static final float spacingX = 1f;
+	public static final float spacingX = 1.5f;
 	// The spacing between lines when rendering
 	public static final float spacingY = 0f;
 	
@@ -95,10 +96,27 @@ public class StringRenderer
 	 * @param y The starting y poisition
 	 * @param scale The scale to draw at (normal=1.0f)
 	 */
-	public static void drawString(String string, float x, float y, float z, float scale)
+	public static void drawString(String string, float x, float y, float z, float scale, boolean centered)
 	{
+		if(string.length() == 0)
+			return;
+		
+		scale /= 1000;
+		x-= (Main.WIDTH/2 + 350) * scale;
+		y-= (Main.HEIGHT + 260) * scale;
+		
 		float currentXOffset = 0;
 		float currentYOffset = 0;
+		float centeredOffset = 0;
+		
+		if(centered)
+		{
+			float temp = 0;
+			for(int i = 0; i < string.length(); i++)
+				temp += glyphs.get(string.charAt(i)).getWidth() * scale + spacingX * scale;
+			centeredOffset = -temp/2;
+		}
+		
 		for(int i = 0; i < string.length(); i++)
 		{
 			char character = string.charAt(i);
@@ -106,7 +124,7 @@ public class StringRenderer
 			if(character == '\n')
 			{
 				currentYOffset -= glyphHeight * scale + spacingY;
-				currentXOffset = 0;
+				centeredOffset = 0;
 				continue;
 			}
 			
@@ -114,8 +132,8 @@ public class StringRenderer
 				continue;
 			
 			Glyph glyph = glyphs.get(character);
-			glyph.render(x + currentXOffset, y + currentYOffset, z, scale);
-			currentXOffset += glyph.getWidth() * scale + spacingX * scale * 10;
+			glyph.render(x + currentXOffset + centeredOffset, y + currentYOffset, z, scale);
+			currentXOffset += glyph.getWidth() * scale + spacingX * scale;
 		}
 	}
 	
@@ -130,6 +148,7 @@ public class StringRenderer
 	 */
 	public static void drawWrappedString(String string, float x, float y, float z, float scale, int wrapWidth)
 	{
+		scale /= 1000;
 		float currentXOffset = 0;
 		float currentYOffset = 0;
 		for(int i = 0; i < string.length(); i++)
@@ -154,7 +173,7 @@ public class StringRenderer
 			
 			Glyph glyph = glyphs.get(character);
 			glyph.render(x + currentXOffset, y + currentYOffset, z, scale);
-			currentXOffset += glyph.getWidth() * scale + spacingX * scale * 10;
+			currentXOffset += glyph.getWidth() * scale + spacingX * scale;
 		}
 	}
 	

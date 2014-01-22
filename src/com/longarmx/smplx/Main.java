@@ -16,8 +16,9 @@ public class Main
 	public static final int WIDTH = 1280;
     public static final int HEIGHT = 720;
     public static final String TITLE = "Simplex Noise";
-    public static final double FRAME_CAP = 5000.0;
+    public static final double FRAME_CAP = 4000.0;
     
+    public static int FPS = 0;
     public static int MAJOR_VERSION;
     public static int MINOR_VERSION;
     
@@ -54,7 +55,6 @@ public class Main
     {
         isRunning = true;
         
-        @SuppressWarnings("unused")
         int frames = 0;
         long frameCounter = 0;
         
@@ -94,6 +94,7 @@ public class Main
                 if(frameCounter >= Time.SECOND)
                 {
                     //System.out.println(frames);
+                	FPS = frames;
                     frames = 0;
                     frameCounter = 0;
                 }

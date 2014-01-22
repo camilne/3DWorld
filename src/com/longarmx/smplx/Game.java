@@ -9,7 +9,6 @@ import com.base.engine.Texture;
 import com.base.engine.Transform;
 import com.base.engine.Vector3f;
 import com.base.engine.Window;
-import com.longarmx.smplx.gui.Screen;
 import com.longarmx.smplx.gui.StringRenderer;
 import com.longarmx.smplx.world.World;
 
@@ -24,10 +23,13 @@ public class Game
 
 	private World world;
 	private Player player;
-	private Screen hud;
+	private MainScreen hud;
+	
+	public boolean gameFocusable = true;
 	
 	public Game()
 	{
+
 		worldShader = WorldShader.getInstance();
 		hudShader = HudShader.getInstance();
 		material = new Material(null, new Vector3f(.1f, .1f, .1f), 1, 8);
@@ -35,7 +37,7 @@ public class Game
 
 		world = new World();
 		player = new Player(world);
-		hud = new Screen();
+		hud = new MainScreen();
 		
 		Transform.setProjection(70f, Window.getWidth(), Window.getHeight(), 0.1f, 1000f);
 		Transform.setCamera(player.getCamera());
@@ -45,12 +47,17 @@ public class Game
 		
 		fontTexture = new Texture("arista.png");
 		StringRenderer.create(fontTexture, "res/arista.fnt");
+		
+		RenderUtil.setClearColor(new Vector3f(119f/255f, 160f/255f, 1));
 	}
 	
 	public void input()
 	{
-		player.input();
-		world.input();
+		if(gameFocusable)
+		{
+			player.input();
+			world.input();
+		}
 		
 		if(Input.getKeyDown(Input.KEY_ESCAPE))
 			Main.instance.stop();
@@ -58,37 +65,39 @@ public class Game
 			Transform.setProjection(Transform.getFOV() - 40, Window.getWidth(), Window.getHeight(), 0.1f, 1000f);
 		else if(Input.getKeyUp(Input.KEY_LCONTROL))
 			Transform.setProjection(Transform.getFOV() + 40, Window.getWidth(), Window.getHeight(), 0.1f, 1000f);
+		
+		if(Input.getMouseDown(1))
+		{
+			player.getCamera().grabMouse(false);
+		}
 	}
-	
 
 	public void update()
-	{		
-		player.update();
-		
-		transform.setTranslation(0, 0, 0);
-		transform.setRotation(0, 0, 0);
-		transform.setScale(1, 1, 1);
+	{	
+		if(gameFocusable)
+		{
+			player.update();
+			hud.update();
+		}
 	}
 	
 	public void render()
 	{
-		RenderUtil.setClearColor(new Vector3f(119f/255f, 160f/255f, 1));
 		worldShader.bind();
 		worldShader.updateUniforms(transform.getTransformation(), transform.getProjectedTransformation(), material);
 		world.render(player.getPos().getX(), player.getPos().getZ());
 		
 		hudShader.bind();
-		hudShader.updateUniforms(transform.getTransformation(), transform.getProjectedTransformation(), material);
+		hudShader.updateUniforms(transform.getTransformation(), transform.getProjectedTransformation(), null);
 		hud.render();
 	}
-	
-	
 	
 	public void dispose()
 	{
 		fontTexture.dispose();
 		world.dispose();
 		Spritesheet.dispose();
+		hud.dispose();
 	}
 
 }

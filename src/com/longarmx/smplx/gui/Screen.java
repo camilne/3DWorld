@@ -1,27 +1,15 @@
 package com.longarmx.smplx.gui;
 
-import org.lwjgl.opengl.GL11;
+import java.util.ArrayList;
 
 public class Screen
 {
 	
-//	private ArrayList<Component> components = new ArrayList<Component>();
-	
-	private String test;
+	private ArrayList<Component> components = new ArrayList<Component>();
 	
 	public Screen()
 	{
-		GL11.glEnable(GL11.GL_BLEND);
-		GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-		
-		StringBuilder builder = new StringBuilder();
-		for(int i = 32; i < 127; i++)
-		{
-			builder.append((char)i);
-			if(i%16==15)
-				builder.append("\n");
-		}
-		test = builder.toString();
+
 	}
 	
 	public void input()	
@@ -31,16 +19,35 @@ public class Screen
 	
 	public void update()
 	{
-		
+		for(int i = 0; i < components.size(); i++)
+			components.get(i).update();
 	}
 	
 	public void render()
 	{
-		StringRenderer.drawString(test, 150, 20, 175, .05f);
+		for(int i = 0; i < components.size(); i++)
+			components.get(i).render();
 	}
 	
 	public void dispose()
 	{
-		
+		for(int i = 0; i < components.size(); i++)
+			components.get(i).dispose();
+	}
+	
+	public void addComponents(Component... c)
+	{
+		for(int i = 0; i < c.length; i++)
+			components.add(c[i]);
+	}
+	
+	public void addComponent(Component c)
+	{
+		components.add(c);
+	}
+	
+	public Component getComponent(int i)
+	{
+		return components.get(i);
 	}
 }

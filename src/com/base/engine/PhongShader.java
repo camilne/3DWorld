@@ -1,5 +1,7 @@
 package com.base.engine;
 
+import org.lwjgl.opengl.GL20;
+
 public class PhongShader extends Shader
 {
 	private static final int MAX_POINT_LIGHTS = 4;
@@ -59,6 +61,10 @@ public class PhongShader extends Shader
 			addUniform("spotLights[" + i + "].direction");
 			addUniform("spotLights[" + i + "].cutoff");
 		}
+		
+		GL20.glBindAttribLocation(program, 0, "position");
+		GL20.glBindAttribLocation(program, 1, "texCoord");
+		GL20.glBindAttribLocation(program, 2, "normal");
 	}
 	
 	public void updateUniforms(Matrix4f worldMatrix, Matrix4f projectedMatrix, Material material)
@@ -154,9 +160,9 @@ public class PhongShader extends Shader
 		setUniform(uniformName + ".direction", spotLight.getDirection());
 		setUniformf(uniformName + ".cutoff", spotLight.getCutoff());
 	}
-	
-	public void bind()
-	{
-		super.bind("position", "texCoord", "normal");
-	}
+//	
+//	public void bind()
+//	{
+//		super.bind("position", "texCoord", "normal");
+//	}
 }

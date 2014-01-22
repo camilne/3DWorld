@@ -15,19 +15,17 @@ public class Component
 	private boolean mouseHover, lastMouseHover;
 	private Vertex[] vertices = new Vertex[4];
 	private Vector2f pos, size;
-//	private String name;
 	private Mesh mesh;
 	
-	public Component(float x, float y, float width, float height, String name)
+	public Component(float x, float y, float width, float height)
 	{
-		this(new Vector2f(x, y), new Vector2f(width, height), name);
+		this(new Vector2f(x, y), new Vector2f(width, height));
 	}
 	
-	public Component(Vector2f pos, Vector2f size, String name)
+	public Component(Vector2f pos, Vector2f size)
 	{
 		this.pos = pos;
 		this.size = size;
-//		this.name = name;
 		
 		vertices[0] = new Vertex(pos.getX(), pos.getY(), 0);
 		vertices[1] = new Vertex(pos.getX() + size.getX(), pos.getY(), 0);
@@ -45,7 +43,7 @@ public class Component
 	public void update()
 	{
 		float mouseX = Input.getMousePosition().getX();
-		float mouseY = Input.getMousePosition().getX();
+		float mouseY = Input.getMousePosition().getY();
 		
 		lastMouseHover = mouseHover;
 		
