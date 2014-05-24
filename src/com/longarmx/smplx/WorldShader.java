@@ -5,6 +5,7 @@ import com.base.engine.DirectionalLight;
 import com.base.engine.Material;
 import com.base.engine.Matrix4f;
 import com.base.engine.PointLight;
+import com.base.engine.RenderUtil;
 import com.base.engine.Shader;
 import com.base.engine.SpotLight;
 import com.base.engine.Transform;
@@ -76,8 +77,8 @@ public class WorldShader extends Shader
 	{
 		if(material.getTexture() != null)
 			material.getTexture().bind();
-//		else
-//			RenderUtil.unbindTextures();
+		else
+			RenderUtil.unbindTextures();
 				
 		setUniform("transformProjected", projectedMatrix);
 		setUniform("transform", worldMatrix);
@@ -96,8 +97,9 @@ public class WorldShader extends Shader
 		setUniformf("specularPower", material.getSpecularPower());
 		
 		setUniform("eyePos", Transform.getCamera().getPos());
+		
 	}
-	
+
 	public static Vector3f getAmbientLight()
 	{
 		return ambientLight;

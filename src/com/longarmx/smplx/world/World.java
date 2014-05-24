@@ -14,6 +14,7 @@ public class World
 	private float persistence = .2f;
 	private float multiplier = 20;
 	private SimplexNoise noise;
+	private SimplexNoise featureNoise;
 	
 	private Chunk[][] chunks = new Chunk[width][height];
 	
@@ -32,6 +33,7 @@ public class World
 	private void generate()
 	{
 		noise = new SimplexNoise(largestFeature, persistence);
+		featureNoise = new SimplexNoise(100, .2f);
 		
 		for(int i = 0; i < chunks.length; i++)
 			for(int j = 0; j < chunks[0].length; j++)
@@ -80,13 +82,23 @@ public class World
 				viewRange++;
 	}
 	
-	public void render(float x, float z)
+	public void render(float x, float y, float z)
 	{
 		for(int i = 0; i < chunks.length; i++)
 			for(int j = 0; j < chunks[0].length; j++)
 				if(withinRange(x, z, i * Chunk.size, j * Chunk.size))
 					if(chunks[i][j] != null)
-						chunks[i][j].render();
+						chunks[i][j].renderGround();
+					else
+						loadChunk(i, j);
+				else
+					unloadChunk(i, j);
+		
+		for(int i = 0; i < chunks.length; i++)
+			for(int j = 0; j < chunks[0].length; j++)
+				if(withinRange(x, z, i * Chunk.size, j * Chunk.size))
+					if(chunks[i][j] != null)
+						chunks[i][j].renderFoliage(x, y, z);
 					else
 						loadChunk(i, j);
 				else
@@ -183,6 +195,11 @@ public class World
 	public float getNoise(int x, int z)
 	{
 		return (float)noise.getNoise(x, z) * multiplier;
+	}
+	
+	public float getFeatureNoise(int x, int z)
+	{
+		return (float)featureNoise.getNoise(x, z);
 	}
 	
 	public void dispose()

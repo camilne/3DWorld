@@ -1,5 +1,12 @@
 package com.longarmx.smplx;
 
+import static org.lwjgl.opengl.GL11.GL_BLEND;
+import static org.lwjgl.opengl.GL11.GL_LINEAR;
+import static org.lwjgl.opengl.GL11.GL_ONE_MINUS_SRC_ALPHA;
+import static org.lwjgl.opengl.GL11.GL_SRC_ALPHA;
+import static org.lwjgl.opengl.GL11.glBlendFunc;
+import static org.lwjgl.opengl.GL11.glEnable;
+
 import com.base.engine.BaseLight;
 import com.base.engine.DirectionalLight;
 import com.base.engine.Input;
@@ -29,7 +36,6 @@ public class Game
 	
 	public Game()
 	{
-
 		worldShader = WorldShader.getInstance();
 		hudShader = HudShader.getInstance();
 		material = new Material(null, new Vector3f(.1f, .1f, .1f), 1, 8);
@@ -43,12 +49,15 @@ public class Game
 		Transform.setCamera(player.getCamera());
 		
 		WorldShader.setAmbientLight(new Vector3f(3f, 3f, 3f));
-		WorldShader.setDirectionalLight(new DirectionalLight(new BaseLight(new Vector3f(1,1,1), 10f), new Vector3f(1,1,1)));
+		WorldShader.setDirectionalLight(new DirectionalLight(new BaseLight(new Vector3f(1,1,1), 10f), new Vector3f(-1,-1,-1)));
 		
-		fontTexture = new Texture("arista.png");
+		fontTexture = new Texture("arista.png", GL_LINEAR, GL_LINEAR);
 		StringRenderer.create(fontTexture, "res/arista.fnt");
 		
 		RenderUtil.setClearColor(new Vector3f(119f/255f, 160f/255f, 1));
+		
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	}
 	
 	public void input()
@@ -83,13 +92,15 @@ public class Game
 	
 	public void render()
 	{
+		
 		worldShader.bind();
 		worldShader.updateUniforms(transform.getTransformation(), transform.getProjectedTransformation(), material);
-		world.render(player.getPos().getX(), player.getPos().getZ());
+		world.render(player.getPos().getX(), player.getPos().getY(), player.getPos().getZ());
 		
 		hudShader.bind();
 		hudShader.updateUniforms(transform.getTransformation(), transform.getProjectedTransformation(), null);
 		hud.render();
+
 	}
 	
 	public void dispose()

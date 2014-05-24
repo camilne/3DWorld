@@ -5,7 +5,7 @@ public class TextureRegion
 {
 	
 	private float s, t, u, v, width, height;
-	private Vector2f st, uv;
+	private Vector2f st, ut, uv, sv;
 	private Texture texture;
 	private Mesh mesh;
 	
@@ -24,7 +24,9 @@ public class TextureRegion
 		this.height = Math.abs(height);
 		
 		this.st = new Vector2f(s, t);
+		this.ut = new Vector2f(u, t);
 		this.uv = new Vector2f(u, v);
+		this.sv = new Vector2f(s, v);
 		
 		mesh = new Mesh(new Vertex[]{
 				new Vertex(new Vector3f(0, 0, 0), st),
@@ -33,8 +35,8 @@ public class TextureRegion
 				new Vertex(new Vector3f(0, 1, 0), new Vector2f(s, v))
 		}, new int[]
 				{
-				3, 1, 0,
-				2, 1, 3
+				0, 1, 3,
+				1, 2, 3
 				});
 	}
 	
@@ -49,9 +51,14 @@ public class TextureRegion
 				new Vertex(new Vector3f(x, y + height, z), new Vector2f(s, t)),
 				new Vertex(new Vector3f(x, y, z), new Vector2f(s, v)),
 				new Vertex(new Vector3f(x + width, y, z), new Vector2f(u, v))
-		}, false, true);
+		}, false);
 		
 		mesh.draw();
+	}
+	
+	public void bind()
+	{
+		texture.bind();
 	}
 
 	public float getS()
@@ -89,14 +96,24 @@ public class TextureRegion
 		return texture;
 	}
 
-	public Vector2f getSt()
+	public Vector2f getST()
 	{
 		return st;
 	}
 
-	public Vector2f getUv()
+	public Vector2f getUT()
+	{
+		return ut;
+	}
+	
+	public Vector2f getUV()
 	{
 		return uv;
+	}
+
+	public Vector2f getSV()
+	{
+		return sv;
 	}
 
 }

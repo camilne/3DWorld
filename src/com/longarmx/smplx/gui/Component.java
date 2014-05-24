@@ -3,6 +3,7 @@ package com.longarmx.smplx.gui;
 import com.base.engine.Input;
 import com.base.engine.Mesh;
 import com.base.engine.Vector2f;
+import com.base.engine.Vector3f;
 import com.base.engine.Vertex;
 
 public class Component
@@ -27,10 +28,10 @@ public class Component
 		this.pos = pos;
 		this.size = size;
 		
-		vertices[0] = new Vertex(pos.getX(), pos.getY(), 0);
-		vertices[1] = new Vertex(pos.getX() + size.getX(), pos.getY(), 0);
-		vertices[2] = new Vertex(pos.getX() + size.getX(), pos.getY() + size.getY(), 0);
-		vertices[3] = new Vertex(pos.getX(), pos.getY() + size.getY(), 0);
+		vertices[0] = new Vertex(new Vector3f(pos.getX(), pos.getY(), 0));
+		vertices[1] = new Vertex(new Vector3f(pos.getX() + size.getX(), pos.getY(), 0));
+		vertices[2] = new Vertex(new Vector3f(pos.getX() + size.getX(), pos.getY() + size.getY(), 0));
+		vertices[3] = new Vertex(new Vector3f(pos.getX(), pos.getY() + size.getY(), 0));
 
 		mesh = new Mesh(vertices, indices);
 	}

@@ -107,6 +107,9 @@ public class Vector3f
 		return "(" + x + " " + y + " " + z + ")";
 	}
 	
+	public Vector3f set(float x, float y, float z) { this.x = x; this.y = y; this.z = z; return this; }
+	public Vector3f set(Vector3f r) { set(r.getX(), r.getY(), r.getZ()); return this; }
+	
 	public float getX() 
 	{
 		return x;

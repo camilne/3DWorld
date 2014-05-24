@@ -14,7 +14,7 @@ public class Tile
 			
 	public Tile(int x, int y)
 	{
-		region = Spritesheet.get(x, y, 256, 256);
+		region = Spritesheet.get(x, y, 255, 255);
 	}
 	
 	public static Tile getTile(int id)

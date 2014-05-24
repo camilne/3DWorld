@@ -1,17 +1,24 @@
 package com.base.engine;
 
 import static org.lwjgl.opengl.GL11.GL_NEAREST;
+import static org.lwjgl.opengl.GL11.GL_ONE;
+import static org.lwjgl.opengl.GL11.GL_ONE_MINUS_SRC_ALPHA;
 import static org.lwjgl.opengl.GL11.GL_RGBA;
 import static org.lwjgl.opengl.GL11.GL_RGBA8;
 import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
 import static org.lwjgl.opengl.GL11.GL_TEXTURE_MAG_FILTER;
 import static org.lwjgl.opengl.GL11.GL_TEXTURE_MIN_FILTER;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_WRAP_S;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_WRAP_T;
 import static org.lwjgl.opengl.GL11.GL_UNSIGNED_BYTE;
 import static org.lwjgl.opengl.GL11.glBindTexture;
+import static org.lwjgl.opengl.GL11.glBlendFunc;
 import static org.lwjgl.opengl.GL11.glDeleteTextures;
 import static org.lwjgl.opengl.GL11.glGenTextures;
 import static org.lwjgl.opengl.GL11.glTexImage2D;
-import static org.lwjgl.opengl.GL11.glTexParameteri;
+import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL12.GL_CLAMP_TO_EDGE;
+import static org.lwjgl.opengl.GL30.*;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -30,7 +37,12 @@ public class Texture
 	
 	public Texture(String fileName)
 	{
-		this(loadTexture(fileName));
+		this(fileName, GL_NEAREST, GL_NEAREST);
+	}
+	
+	public Texture(String fileName, int minFilter, int magFilter)
+	{
+		this(loadTexture(fileName, minFilter, magFilter));
 	}
 	
 	public Texture(int id)
@@ -57,7 +69,7 @@ public class Texture
 		glDeleteTextures(id);
 	}
 	
-	private static Vector3i loadTexture(String fileName)
+	private static Vector3i loadTexture(String fileName, int minFilter, int magFilter)
 	{
 		String path = "res" + File.separator + "textures" + File.separator + fileName;
 		
@@ -79,6 +91,8 @@ public class Texture
 			
 			int width = bimg.getWidth();
 			int height = bimg.getHeight();
+			
+			glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 			
 			int textureID = glGenTextures();
 			
@@ -103,10 +117,15 @@ public class Texture
 			
 			glBindTexture(GL_TEXTURE_2D, textureID);
 			
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 			
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+			
+			if(minFilter == GL_LINEAR_MIPMAP_LINEAR || minFilter == GL_LINEAR_MIPMAP_NEAREST)
+				glGenerateMipmap(GL_TEXTURE_2D);
 			
 			return new Vector3i(textureID, width, height);
 		}

@@ -129,19 +129,19 @@ void main()
     vec4 textureColor = texture(sampler, texCoord0.xy);
     
     if(textureColor != vec4(0,0,0,0))
-        color *= textureColor;
-    
-    vec3 normal = normalize(normal0);
-    
-    totalLight += calcDirectionalLight(directionalLight, normal);
-    
-    for(int i = 0; i < MAX_POINT_LIGHTS; i++)
-        if(pointLights[i].base.intensity > 0)
-            totalLight += calcPointLight(pointLights[i], normal);
-    
-    for(int i = 0; i < MAX_SPOT_LIGHTS; i++)
-        if(spotLights[i].pointLight.base.intensity > 0)
-            totalLight += calcSpotLight(spotLights[i], normal);
-    
+    	color *= textureColor;
+
+	vec3 normal = normalize(normal0);
+	
+	totalLight += calcDirectionalLight(directionalLight, normal);
+	
+	for(int i = 0; i < MAX_POINT_LIGHTS; i++)
+		if(pointLights[i].base.intensity > 0)
+			totalLight += calcPointLight(pointLights[i], normal);
+	
+	for(int i = 0; i < MAX_SPOT_LIGHTS; i++)
+		if(spotLights[i].pointLight.base.intensity > 0)
+			totalLight += calcSpotLight(spotLights[i], normal);
+				
     fragColor = color * totalLight;
 }

@@ -45,7 +45,7 @@ public class Util
 	public static FloatBuffer createFlippedBuffer(Vertex[] vertices)
 	{
 		FloatBuffer buffer = createFloatBuffer(vertices.length * Vertex.SIZE);
-		
+
 		for(int i = 0; i < vertices.length; i++)
 		{
 			buffer.put(vertices[i].getPos().getX());
@@ -56,10 +56,13 @@ public class Util
 			buffer.put(vertices[i].getNormal().getX());
 			buffer.put(vertices[i].getNormal().getY());
 			buffer.put(vertices[i].getNormal().getZ());
+//			buffer.put(vertices[i].getTangent().getX());
+//			buffer.put(vertices[i].getTangent().getY());
+//			buffer.put(vertices[i].getTangent().getZ());
 		}
-		
+
 		buffer.flip();
-		
+
 		return buffer;
 	}
 	

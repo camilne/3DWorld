@@ -15,17 +15,26 @@ public class Player
 	private float z;
 	private World world;
 	private Camera camera;
+	private float movementSpeed;
 	
 	public Player(World world){
 		this.world = world;
 		isFlying = false;
 		camera = new Camera();
 		camera.setPos(new Vector3f(10 * Chunk.size, 0, 10 * Chunk.size));
+		movementSpeed = 1;
 	}
 	
 	public void input()
 	{
-		camera.setMovAmt((float)(10 * Time.getDelta() * (Input.getKey(Input.KEY_Q) ? 10 : 1)));
+		if(Input.getKey(Input.KEY_Q))
+			movementSpeed = 10;
+		else if(Input.getKey(Input.KEY_LSHIFT))
+			movementSpeed = 0.25f;
+		else
+			movementSpeed = 1;
+		
+		camera.setMovAmt((float)(10 * Time.getDelta() * movementSpeed));
 		camera.input();
 		
 		if(Input.getKeyDown(Input.KEY_E))
@@ -34,7 +43,7 @@ public class Player
 	
 	private void fall()
 	{
-		camera.getPos().setY(y - .005f);
+		camera.getPos().setY(y - (float)Time.getDelta() * 10 * (Input.getKey(Input.KEY_Q) ? 10 : 1));
 	}
 	
 	private void collision()
