@@ -13,13 +13,13 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.util.Calendar;
 
 import javax.imageio.ImageIO;
 
 import org.lwjgl.BufferUtils;
+import org.lwjgl.opengl.Display;
 
 import com.base.engine.Input;
 import com.base.engine.RenderUtil;
@@ -32,13 +32,16 @@ public class Main
 	
 	public static final int WIDTH = 1280;
     public static final int HEIGHT = 720;
-    public static final String TITLE = "Simplex Noise";
-    public static final double FRAME_CAP = 120.0;
+    public static final String TITLE = "3D World 0.0.5";
+    public static final int TARGET_FPS = 60;
     
     public static int FPS = 0;
     public static int MAJOR_VERSION;
     public static int MINOR_VERSION;
     
+    private static int secondsFPS = 0;    
+    private static float[] deltaSamples = new float[TARGET_FPS/2];
+    private static float[] fpsSamples = new float[TARGET_FPS/4];
     
     private boolean isRunning;
     private Game game;
@@ -50,6 +53,12 @@ public class Main
         isRunning = false;
         
         game = new Game();
+        
+        for(int i = 0; i < fpsSamples.length; i++)
+        	fpsSamples[i] = TARGET_FPS;
+        
+        for(int i = 0; i < deltaSamples.length; i++)
+        	deltaSamples[i] = 1f/TARGET_FPS;
     }
     
     public void start()
@@ -70,75 +79,73 @@ public class Main
     
     private void run()
     {
-        isRunning = true;
-        
-        int frames = 0;
-        long frameCounter = 0;
-        
-        final double frameTime = 1.0 / FRAME_CAP;
-        
-        long lastTime = Time.getTime();
-        double unprocessedTime = 0;
-        
-        while(isRunning)
-        {
-            boolean render = false;
-            
-            long startTime = Time.getTime();
-            long passedTime = startTime - lastTime;
-            lastTime = startTime;
-            
-            unprocessedTime += passedTime / (double)Time.SECOND;
-            frameCounter += passedTime;
-            
-            
-            while(unprocessedTime > frameTime)
-            {
-                render = true;
-                
-                unprocessedTime -= frameTime;
-                
-                if(Window.isCloseRequested())
-                    stop();
-                
-                Time.setDelta(frameTime);
-                
-                if(Input.getKeyDown(Input.KEY_F1))
-                	screenshot();
-                
-                game.input();
-                Input.update();
-                
-                game.update();
-                
-                if(frameCounter >= Time.SECOND)
-                {
-                    //System.out.println(frames);
-                	FPS = frames;
-                    frames = 0;
-                    frameCounter = 0;
-                }
-            }
-            if(render)
-            {
-                render();
-                frames++;
-            }
-            else
-            {
-                try 
-                {
-                    Thread.sleep(1);
-                } 
-                catch (InterruptedException e) 
-                {
-                    e.printStackTrace();
-                }
-            }
-        }
-        
-        cleanUp();
+		long time = 0, lastTime = 0, currentFPSSample = 0, lastFPSTime = 0;
+		
+		
+		isRunning = true;
+		
+		while(isRunning)
+		{			
+			if(Window.isCloseRequested())
+				isRunning = false;
+			
+			// Input Stuff
+			game.input();
+			
+
+			if(Input.isKeyPressed(Input.KEY_F1))
+				screenshot();
+			
+			Input.update();
+				
+			// Timing Stuff
+			time = Time.getTime();
+			Time.setDelta((time - lastTime)/1000000f);
+			deltaSamples[(int) (currentFPSSample % deltaSamples.length)] = (float) Time.getDelta();
+			FPS = (int) (1f/avg(deltaSamples) * 1000);
+			lastTime = time;
+			
+			if(time - lastFPSTime > Time.SECOND)
+			{
+				secondsFPS = FPS;
+				lastFPSTime = time;
+			}
+			
+			fpsSamples[(int) (currentFPSSample++ % fpsSamples.length)] = FPS;
+			
+			//game.update();
+			game.playerUpdate();
+			
+			// Rendering Stuff
+			render();
+			
+			
+			
+			// This stops the aux thread from completely freezing
+			try
+			{
+				Thread.sleep(1);
+			} catch (InterruptedException e)
+			{
+				e.printStackTrace();
+			}
+			Display.sync(TARGET_FPS);
+		}
+		
+		System.out.println();
+		shutDown();
     }
+    
+    private static float avg(float... a)
+	{
+		float sum = 0;
+		
+		for(int i = 0; i < a.length; i++)
+			sum += a[i];
+		
+		return sum / a.length;
+	}
+
     
     private void render()
     {
@@ -147,63 +154,65 @@ public class Main
         Window.render();
     }
     
-    private void cleanUp()
+    private void shutDown()
     {
-    	game.dispose();
+    	if(game != null)
+    		game.dispose();
         Window.dispose();
         System.exit(0);
     }
   
-    // Thanks HeroesGrave
-    private static String jarDir()
-    {
-       try
-       {
-          return new File(Main.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParent();
-       }
-       catch(URISyntaxException e)
-       {
-          e.printStackTrace();
-          return null;
-       }
-    }
-	
-	private static void loadNatives()
-	{
-		String os = System.getProperty("os.name").toLowerCase();
-		String folder = "";
-    	
-    	if (os.indexOf("win") >= 0)
-    	{
-			System.out.println("OS: Windows");
-			folder = "windows";
-		} 
-    	else if (os.indexOf("mac") >= 0) 
-    	{
-			System.out.println("OS: Mac");
-			folder = "macosx";
-		} 
-    	else if (os.indexOf("nix") >= 0 || os.indexOf("nux") >= 0 || os.indexOf("aix") > 0) 
-    	{
-			System.out.println("OS: Unix or Linux");
-			folder = "linux";
-		} 
-    	else if (os.indexOf("sunos") >= 0) 
-		{
-			System.out.println("OS: Solaris");
-			folder = "solaris";
-		} 
-    	else 
-		{
-			System.err.println("OS NOT SUPPORTED");
-			System.exit(1);
-		}
-    	
-//    	String jarDir = System.getProperty("user.dir");    	
-    	String nativeLibDir = jarDir() + File.separator + "native" + File.separator + folder;
-    	
-    	System.setProperty("org.lwjgl.librarypath", nativeLibDir);
-	}
+//    // Thanks HeroesGrave
+//    private static String jarDir()
+//    {
+//       try
+//       {
+//          return new File(Main.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParent();
+//       }
+//       catch(URISyntaxException e)
+//       {
+//          e.printStackTrace();
+//          return null;
+//       }
+//    }
+//	
+//	private static void loadNatives()
+//	{
+//		String os = System.getProperty("os.name").toLowerCase();
+//		String folder = "";
+//    	
+//    	if (os.indexOf("win") >= 0)
+//    	{
+//			System.out.println("OS: Windows");
+//			folder = "windows";
+//		} 
+//    	else if (os.indexOf("mac") >= 0) 
+//    	{
+//			System.out.println("OS: Mac");
+//			folder = "macosx";
+//		} 
+//    	else if (os.indexOf("nix") >= 0 || os.indexOf("nux") >= 0 || os.indexOf("aix") > 0) 
+//    	{
+//			System.out.println("OS: Unix or Linux");
+//			folder = "linux";
+//		} 
+//    	else if (os.indexOf("sunos") >= 0) 
+//		{
+//			System.out.println("OS: Solaris");
+//			folder = "solaris";
+//		} 
+//    	else 
+//		{
+//			System.err.println("OS NOT SUPPORTED");
+//			System.exit(1);
+//		}
+//    	
+////    	String jarDir = System.getProperty("user.dir");    	
+////    	String nativeLibDir = jarDir() + File.separator + ".." + File.separator + "native" + File.separator + folder;
+//    	String nativeLibDir = new File("native").getAbsolutePath() + File.separator + folder;
+//    	
+//    	System.setProperty("org.lwjgl.librarypath", nativeLibDir);
+//	}
 	
 	public static void screenshot()
 	{
@@ -274,11 +283,27 @@ public class Main
 		Calendar cal = Calendar.getInstance();
 		return TIME_PREFIX + cal.get(Calendar.HOUR_OF_DAY) + "-" + cal.get(Calendar.MINUTE) + "-" + cal.get(Calendar.SECOND) + SUFFIX;
 	}
+	
+	// Timing stuff
+	
+	public static float[] getFpsSamples()
+	{
+		return fpsSamples;
+	}
+	
+	public static int getSecondsFPS()
+	{
+		return secondsFPS;
+	}
+	
+	public static float getAverageDelta()
+	{
+		return avg(deltaSamples);
+	}
     
     public static void main(String[] args)
     {
-    	boolean useLog = true;
-	    if(useLog)
+	    if(true)
 	    {
 	    	try
 			{
@@ -292,8 +317,7 @@ public class Main
     	}
     	
     	System.out.println("Using Java Version: " + System.getProperty("java.version"));
-    	//System.setProperty("org.lwjgl.librarypath", new File("native").getAbsolutePath());
-    	loadNatives();
+//    	loadNatives();
     	
         Window.createWindow(WIDTH, HEIGHT, TITLE, false);
         

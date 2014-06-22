@@ -15,6 +15,8 @@ import static org.lwjgl.opengl.GL20.glDisableVertexAttribArray;
 import static org.lwjgl.opengl.GL20.glEnableVertexAttribArray;
 import static org.lwjgl.opengl.GL20.glVertexAttribPointer;
 
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 import java.util.ArrayList;
 
 public class Mesh
@@ -61,6 +63,12 @@ public class Mesh
 		this.storeData = storeData;
 	}
 	
+	public Mesh(FloatBuffer vertices, IntBuffer indices)
+	{
+		initMeshData();
+		addVertices(vertices, indices);
+	}
+	
 	private void initMeshData()
 	{
 		vbo = glGenBuffers();
@@ -83,13 +91,18 @@ public class Mesh
 		this.y = vertices[0].getPos().getY();
 		this.z = vertices[0].getPos().getZ();
 		
-		size = indices.length;
+		addVertices(Util.createFlippedBuffer(vertices), Util.createFlippedBuffer(indices));
+	}
+	
+	private void addVertices(FloatBuffer vertices, IntBuffer indices)
+	{
+		size = indices.capacity();
 		
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		glBufferData(GL_ARRAY_BUFFER, Util.createFlippedBuffer(vertices), GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, vertices, GL_STATIC_DRAW);
 		
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, Util.createFlippedBuffer(indices), GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices, GL_STATIC_DRAW);
 	}
 	
 	public void updateVertices(Vertex[] vertices, boolean calcNormals)
@@ -118,7 +131,7 @@ public class Mesh
 		glDisableVertexAttribArray(2);
 	}
 	
-	private void calcNormals(Vertex[] vertices, int[] indices)
+	public static void calcNormals(Vertex[] vertices, int[] indices)
 	{
 		for(int i = 0; i < indices.length; i += 3)
 		{

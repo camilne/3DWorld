@@ -2,9 +2,9 @@ package com.base.engine;
 
 public class Vector3f 
 {
-	private float x;
-	private float y;
-	private float z;
+	public float x;
+	public float y;
+	public float z;
 	
 	public Vector3f(float x, float y, float z)
 	{

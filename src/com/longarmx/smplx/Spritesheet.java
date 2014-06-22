@@ -17,9 +17,15 @@ public class Spritesheet
 		return new TextureRegion(texture, x, y, width, height);
 	}
 	
+	public static void bind()
+	{
+		texture.bind();
+	}
+	
 	public static void dispose()
 	{
-		texture.dispose();
+		if(texture != null)
+			texture.dispose();
 	}
 	
 }

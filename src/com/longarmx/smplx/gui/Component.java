@@ -32,7 +32,7 @@ public class Component
 		vertices[1] = new Vertex(new Vector3f(pos.getX() + size.getX(), pos.getY(), 0));
 		vertices[2] = new Vertex(new Vector3f(pos.getX() + size.getX(), pos.getY() + size.getY(), 0));
 		vertices[3] = new Vertex(new Vector3f(pos.getX(), pos.getY() + size.getY(), 0));
-
+		
 		mesh = new Mesh(vertices, indices);
 	}
 	

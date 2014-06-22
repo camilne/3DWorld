@@ -1,87 +1,72 @@
 package com.longarmx.smplx.world;
 
-import static org.lwjgl.opengl.GL11.GL_LINEAR;
-
-import java.util.Random;
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 
 import com.base.engine.Mesh;
-import com.base.engine.Texture;
+import com.base.engine.TextureRegion;
+import com.base.engine.Util;
 import com.base.engine.Vector3f;
 import com.base.engine.Vertex;
+import com.longarmx.smplx.Spritesheet;
 
 public class Grass
-{
-	private static Texture grassBlade;
-	private static Mesh[][] grassMeshTypes;
-	private static Random random;
-	
-	private Vector3f position;
-	private int type;
-	private int lod;
+{	
 	private Mesh mesh;
+	
+	private boolean isCreated = false;
+	private FloatBuffer vertices;
+	private IntBuffer indices;
 	
 	public Grass(Vector3f position)
 	{
-		this.position = position;
+
+		Vertex[] tmp_vertices = new Vertex[8];//translateVertices(grassMeshTypes[type][lod].getVertices(), position);
 		
-		if(grassBlade == null)
-			grassBlade = new Texture("grassBlade2.png", GL_LINEAR, GL_LINEAR);
+		TextureRegion region = Spritesheet.get(0, 257, 255, 255);
 		
-		if(grassMeshTypes == null)
-		{
-			grassMeshTypes = new Mesh[3][3];
-			for(int i = 0; i < grassMeshTypes.length; i++)
-			{
-				grassMeshTypes[i][0] = new Mesh("grass_patch_low" + i + ".obj", true);
-				grassMeshTypes[i][1] = new Mesh("grass_patch_mid" + i + ".obj", true);
-				grassMeshTypes[i][2] = new Mesh("grass_patch_high" + i + ".obj", true);
-			}
-		}
+		int i = 0;
+		tmp_vertices[i++] = new Vertex(position.add(new Vector3f(-0.5f, 0, -0.5f)), region.getSV());
+		tmp_vertices[i++] = new Vertex(position.add(new Vector3f(0.5f, 0, 0.5f)), region.getUV());
+		tmp_vertices[i++] = new Vertex(position.add(new Vector3f(0.5f, 1, 0.5f)), region.getUT());
+		tmp_vertices[i++] = new Vertex(position.add(new Vector3f(-0.5f, 1,- 0.5f)), region.getST());
 		
-		if(random == null)
-			random = new Random();
+		tmp_vertices[i++] = new Vertex(position.add(new Vector3f(0.5f, 0, -0.5f)), region.getSV());
+		tmp_vertices[i++] = new Vertex(position.add(new Vector3f(-0.5f, 0, 0.5f)), region.getUV());
+		tmp_vertices[i++] = new Vertex(position.add(new Vector3f(-0.5f, 1, 0.5f)), region.getUT());
+		tmp_vertices[i++] = new Vertex(position.add(new Vector3f(0.5f, 1,- 0.5f)), region.getST());
+		 
+		int[] tmp_indices = {0, 1, 3, 1, 2, 3, 4, 5, 7, 5, 6, 7};//grassMeshTypes[type][lod].getIndices();
+		indices = Util.createFlippedBuffer(tmp_indices);
 		
-		type = random.nextInt(grassMeshTypes.length);
-		lod = 1;
-		
-		mesh = new Mesh(translateVertices(grassMeshTypes[type][lod].getVertices()), grassMeshTypes[type][lod].getIndices());
+		Mesh.calcNormals(tmp_vertices, tmp_indices);
+		vertices = Util.createFlippedBuffer(tmp_vertices);
 	}
 	
-	public void draw(float x, float y, float z)
+	public void create()
 	{
-		int lod = lod(x, y, z);
-		if(this.lod != lod)
-		{
-			this.lod = lod;
-			mesh = new Mesh(translateVertices(grassMeshTypes[type][lod].getVertices()), grassMeshTypes[type][lod].getIndices());
-		}
-		
-		grassBlade.bind();
+		mesh = new Mesh(vertices, indices);
+		isCreated = true;
+	}
+	
+	public void draw(Vector3f plr)
+	{
+		if(!isCreated)
+			return;
+
 		mesh.draw();
 	}
+
 	
-	private Vertex[] translateVertices(Vertex[] vertices)
+	public void dispose()
 	{
-		Vertex[] tmp = new Vertex[vertices.length];
-		for(int i = 0; i < tmp.length; i++)
-			tmp[i] = new Vertex(vertices[i].getPos().add(position), vertices[i].getTexCoord(), vertices[i].getNormal());
-		return tmp;
+		if(mesh != null)
+			mesh.dispose();
 	}
 	
-	private int lod(float x, float y, float z)
+	public boolean isCreated()
 	{
-		float xx = position.getX();
-		float yy = position.getY();
-		float zz = position.getZ();
-		
-		float distance = (float) Math.sqrt((xx - x) * (xx - x) + (yy - y) * (yy - y) + (zz - z) * (zz - z));
-		
-		if(distance < 3)
-			return 2;
-		else if(distance < 50)
-			return 1;
-		else
-			return 0;
+		return isCreated;
 	}
 
 }

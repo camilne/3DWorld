@@ -93,11 +93,13 @@ public class StringRenderer
 	 * Renders a string on a single line
 	 * @param string The string to render
 	 * @param x The starting x position
-	 * @param y The starting y poisition
+	 * @param y The starting y position
 	 * @param scale The scale to draw at (normal=1.0f)
 	 */
 	public static void drawString(String string, float x, float y, float z, float scale, boolean centered)
 	{
+		texture.bind();
+		
 		if(string.length() == 0)
 			return;
 		
@@ -131,6 +133,7 @@ public class StringRenderer
 			if(!glyphs.containsKey(character))
 				continue;
 			
+			
 			Glyph glyph = glyphs.get(character);
 			glyph.render(x + currentXOffset + centeredOffset, y + currentYOffset, z, scale);
 			currentXOffset += glyph.getWidth() * scale + spacingX * scale;
@@ -148,6 +151,8 @@ public class StringRenderer
 	 */
 	public static void drawWrappedString(String string, float x, float y, float z, float scale, int wrapWidth)
 	{
+		texture.bind();
+		
 		scale /= 1000;
 		float currentXOffset = 0;
 		float currentYOffset = 0;

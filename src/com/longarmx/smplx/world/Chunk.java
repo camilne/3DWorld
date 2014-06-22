@@ -1,9 +1,13 @@
 package com.longarmx.smplx.world;
 
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 import java.util.ArrayList;
+import java.util.Random;
 
 import com.base.engine.Mesh;
 import com.base.engine.TextureRegion;
+import com.base.engine.Util;
 import com.base.engine.Vector3f;
 import com.base.engine.Vertex;
 import com.longarmx.smplx.Spritesheet;
@@ -14,25 +18,28 @@ public class Chunk
 	public static int size = 16;
 	
 	private static TextureRegion grassTexture;	
+	private static Vector3f plr = new Vector3f(0, 0, 0);
 	
 	private int x;
 	private int z;
-	private World world;
-	private Vector3f[][] map = new Vector3f[size + 1][size + 1];
+	private WorldData data;
+	private float[][] map = new float[size + 1][size + 1];
 	private byte[][] tiles = new byte[map.length][map[0].length];
 	private Mesh mesh;
 	
+	private FloatBuffer vertices;
+	private IntBuffer indices;
+	
+	private boolean isCreated = false;
+	
 	private ArrayList<Grass> grassPatches = new ArrayList<Grass>();
 	
-	public Chunk(int x, int z, World world)
+	public Chunk(int x, int z, WorldData data)
 	{
 		this.x = x * size;
 		this.z = z * size;
-		this.world = world;
-		
-		if(grassTexture == null)
-			grassTexture = Spritesheet.get(257, 0, 255, 255);
-		
+		this.data = data;
+
 		generate();
 	}
 	
@@ -41,36 +48,90 @@ public class Chunk
 	
 	public void generate()
 	{		
+		Random rand = new Random();
+		
+		// Generate tile types
+		
+				for(int i = 0; i < tiles.length; i++)
+					for(int j = 0; j < tiles[0].length; j++)
+					{
+						byte id = 1;
+						if(data.getFNoise(i + x, j + z) > .04f || data.getFNoise(i + x, j + z) < -.04f)
+							id = 0;
+						tiles[i][j] = id;
+					}
+//				
+//				for(int i = 0; i < tiles.length; i++)
+//					for(int j = 0; j < tiles[0].length; j++)
+//					{
+//						if(tiles[i][j] == 1)
+//						{
+//							int region = 0;
+//							if(getTile(i-1, j) == 1)
+//								region += 1;
+//							if(getTile(i, j+1) == 1)
+//								region += 2;
+//							if(getTile(i+1, j) == 1)
+//								region += 4;
+//							if(getTile(i, j-1) == 1)
+//								region += 8;
+//							
+//							
+//						}
+//					}
+		
+		// Generate terrain mesh
+		
 		for(int i = 0; i < map.length; i++)
 			for(int j = 0; j < map[0].length; j++)
 			{
-				map[i][j] = new Vector3f(i + x, (float)(world.getNoise(i + x, j + z)), j + z);
+				map[i][j] = (float)(data.getTNoise(i + x, j + z));
 				
-				if(world.getFeatureNoise(i + x, j + z) > .1f || world.getFeatureNoise(i + x, j + z) < -.1f)
-					grassPatches.add(new Grass(map[i][j]));
+				if(data.getFNoise(i + x, j + z) > 0.05f || data.getFNoise(i + x, j + z) < -0.05f) // if it's in the middle .2
+					grassPatches.add(new Grass(new Vector3f(i + x + rand.nextFloat() - 0.5f, map[i][j], j + z + rand.nextFloat() - 0.5f)));
 			}
-		
-		for(int i = 0; i < tiles.length; i++)
-			for(int j = 0; j < tiles[0].length; j++)
-				tiles[i][j] = 0;
 		
 		index = 0;
 		iindex = 0;
-		Vertex[] vertices = new Vertex[size * size * 4];
-		int[] indices = new int[vertices.length * 3/2];
 		
-		for(int j = 0; j < map[0].length; j++)
-		{
-			for(int i = 0; i < map.length; i++)
-			{
-				if(i != map.length - 1 && j != map[0].length - 1)
-				{
-					populateMeshData(vertices, i, j, indices);
-				}
-			}
-		}
+		Vertex[] tmp_vertices = new Vertex[size * size * 4];
+		int[] tmp_indices = new int[tmp_vertices.length * 3/2];
 		
-		mesh = new Mesh(vertices, indices, true, false);
+		for(int j = 0; j < map[0].length - 1; j++)
+			for(int i = 0; i < map.length - 1; i++)
+				populateMeshData(tmp_vertices, i, j, tmp_indices);
+		
+		Mesh.calcNormals(tmp_vertices, tmp_indices);
+		
+		vertices = Util.createFlippedBuffer(tmp_vertices);
+		indices = Util.createFlippedBuffer(tmp_indices);
+	}
+	
+	private int getTile(int x, int y)
+	{
+		if(x < 0 || x >= tiles.length || y < 0 || y >= tiles[0].length)
+			return 0;
+		
+		return tiles[x][y];
+	}
+	
+	public static void loadTextures()
+	{
+		if(grassTexture == null)
+			grassTexture = Spritesheet.get(257, 0, 255, 255);
+	}
+	
+	public void create()
+	{
+		mesh = new Mesh(vertices, indices);
+		
+		for(int i = 0; i < grassPatches.size(); i++)
+			grassPatches.get(i).create();
+		
+		vertices = null;
+		indices = null;
+		
+		isCreated = true;
 	}
 	
 	private void populateMeshData(Vertex[] vertices, int i, int j, int[] indices)
@@ -84,37 +145,71 @@ public class Chunk
 		
 		TextureRegion region = Tile.getTile(tiles[i][j]).getRegion();
 		
-		vertices[index++] = new Vertex(map[i][j], region.getST());
-		vertices[index++] = new Vertex(map[i + 1][j], region.getUT());
-		vertices[index++] = new Vertex(map[i + 1][j + 1], region.getUV());
-		vertices[index++] = new Vertex(map[i][j + 1], region.getSV());
+		vertices[index++] = new Vertex(new Vector3f(i + x, map[i][j], j + z), region.getST());
+		vertices[index++] = new Vertex(new Vector3f(i + x + 1, map[i + 1][j], j + z), region.getUT());
+		vertices[index++] = new Vertex(new Vector3f(i + x + 1, map[i + 1][j + 1], j + z + 1), region.getUV());
+		vertices[index++] = new Vertex(new Vector3f(i + x, map[i][j + 1], j + z + 1), region.getSV());
 	}
 	
-	public void renderGround()
+	public void render()
 	{
-		grassTexture.bind();
-		mesh.draw();
+		if(!isCreated)
+			return;
+		
+		if(mesh != null)
+		{
+			grassTexture.bind();
+			mesh.draw();
+		}
 	}
 	
-	public void renderFoliage(float x, float y, float z)
+	public void renderTransparency()
 	{
 		for(int i = 0; i < grassPatches.size(); i++)
-			grassPatches.get(i).draw(x, y, z);
+			grassPatches.get(i).draw(plr);
 	}
 	
-	public Vector3f getMap(int x, int z)
+	public float getMap(int x, int z)
 	{
-		if(x < 0 || x >= size || z < 0 || z >= size)
-			return new Vector3f(x, 0, z);
+//		System.out.println(plr.toString());
+//		System.out.println("=" + x + " " + z);
+		while(x < 0)
+			x += map.length;
+		
+		while(z < 0)
+			z += map[0].length;
+		
+//		System.out.println("==" + x + " " + z);
 		
 		return map[x][z];
 	}
 	
 	public void dispose()
 	{
-		mesh.dispose();
+		if(mesh != null)
+			mesh.dispose();
+		for(int i = 0; i < grassPatches.size(); i++)
+			grassPatches.get(i).dispose();
 	}
 	
-	
+	public static void updatePlrPos(Vector3f plr)
+	{
+		Chunk.plr = plr;
+	}
 
+	public boolean isCreated()
+	{
+		return isCreated;
+	}
+	
+	public int getX()
+	{
+		return x;
+	}
+	
+	public int getZ()
+	{
+		return z;
+	}
+	
 }

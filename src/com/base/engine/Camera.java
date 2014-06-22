@@ -8,8 +8,11 @@ public class Camera
 	private Vector3f forward;
 	private Vector3f up;
 	
-	private float sensitivity= 0.5f;
+	private float sensitivity= 0.03f;
 	private float movAmt = (float)(10 * Time.getDelta());
+	
+	private Vector2f desiredAngle;
+	private Vector2f angle;
 	
 	public Camera()
 	{
@@ -21,6 +24,9 @@ public class Camera
 		this.pos = pos;
 		this.forward = forward.normalized();
 		this.up = up.normalized();
+		
+		desiredAngle = new Vector2f(0, 0);
+		angle = new Vector2f(0, 0);
 	}
 
 	boolean mouseLocked = false;
@@ -53,10 +59,22 @@ public class Camera
 			boolean rotY = deltaPos.getX() != 0;
 			boolean rotX = deltaPos.getY() != 0;
 			
-			if(rotY)
-				rotateY(deltaPos.getX() * sensitivity);
-			if(rotX)
-				rotateX(-deltaPos.getY() * sensitivity);
+			desiredAngle = desiredAngle.add(deltaPos);
+			
+			if(desiredAngle.getY() < -190)
+				desiredAngle.setY(-190);
+			else if(desiredAngle.getY() > 190)
+				desiredAngle.setY(190);
+			
+			angle = angle.add(desiredAngle.mul(2).sub(angle)).mul(0.1f).mul(sensitivity);
+//			
+//			System.out.println("Angle" + angle.toString());
+//			System.out.println(desiredAngle.toString());
+			
+			
+			forward = new Vector3f((float)Math.cos(angle.getY()) * (float)Math.sin(angle.getX()), (float)Math.sin(angle.getY()), (float)Math.cos(angle.getY()) * (float)Math.cos(angle.getX()));
+			Vector3f Haxis = yAxis.cross(forward).normalized();
+			up = forward.cross(Haxis).normalized();
 				
 			if(rotY || rotX)
 				Input.setMousePosition(centerPosition);

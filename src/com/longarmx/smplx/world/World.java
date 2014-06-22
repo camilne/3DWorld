@@ -1,26 +1,43 @@
 package com.longarmx.smplx.world;
 
+import java.util.ArrayList;
+
+import org.lwjgl.opengl.GL11;
+
 import com.base.engine.Input;
+import com.base.engine.Shader;
+import com.base.engine.Transform;
 import com.base.engine.Vector3f;
+import com.longarmx.smplx.Spritesheet;
 import com.longarmx.smplx.noise.SimplexNoise;
 
 public class World
 {
+	private static final int MAX_CHUNKS_LOADED_PER_FRAME = 15;
+	
 	public static int width = 100;
 	public static int height = 100;
 	public static int viewRange = 5;
+	public static int loadRange = 7;
 	
-	private int largestFeature = 100;
-	private float persistence = .2f;
-	private float multiplier = 20;
-	private SimplexNoise noise;
-	private SimplexNoise featureNoise;
+	private WorldData data;
+	private int chunksLoaded = 0;
+	private Shader skyboxShader;
+
 	
-	private Chunk[][] chunks = new Chunk[width][height];
+	private volatile ArrayList<Chunk> chunks = new ArrayList<Chunk>();
+	private static volatile Vector3f playerPos = new Vector3f(0, 0, 0);
 	
 	public World()
 	{
-		noise = new SimplexNoise(largestFeature, persistence);
+		data = new WorldData();
+		Chunk.loadTextures();
+		Tile.getTile(0);
+		
+		
+		skyboxShader = new Shader("skybox.vs", "skybox.fs");
+		skyboxShader.compileShader();
+		skyboxShader.addUniform("projectedTransform");
 		
 		load();
 	}
@@ -32,77 +49,96 @@ public class World
 	
 	private void generate()
 	{
-		noise = new SimplexNoise(largestFeature, persistence);
-		featureNoise = new SimplexNoise(100, .2f);
-		
-		for(int i = 0; i < chunks.length; i++)
-			for(int j = 0; j < chunks[0].length; j++)
-				chunks[i][j] = null;
+		data.tNoise = new SimplexNoise(data.largestFeature, data.persistence);
+		data.fNoise = new SimplexNoise(100, .2f);
 	}
 	
 	private void load(int largestFeature, float persistence)
 	{
-		this.largestFeature = Math.max(largestFeature, 10);
-		this.persistence = Math.max(persistence, .1f);
+		data.largestFeature = Math.max(largestFeature, 10);
+		data.persistence = Math.max(persistence, .1f);
 		load();
 	}
 	
 	private void loadChunk(int x, int z)
 	{
-		chunks[x][z] = new Chunk(x, z, this);
+		if(chunksLoaded++ < MAX_CHUNKS_LOADED_PER_FRAME)
+			chunks.add(ChunkFactory.createChunk(data, x, z));
 	}
 	
-	private void unloadChunk(int x, int z)
+	private void unloadChunk(Chunk chunk)
 	{
-		if(chunks[x][z] != null)
+		if(chunk != null)
 		{
-			chunks[x][z].dispose();
-			chunks[x][z] = null;
+			chunk.dispose();
+			chunks.remove(chunk);
 		}
 	}
 	
 	public void input()
 	{
-		if(Input.getKeyDown(Input.KEY_R))
+		if(Input.isKeyPressed(Input.KEY_R))
 			load();
 		
-		if(Input.getKeyDown(Input.KEY_PERIOD))
-			load(largestFeature+20, persistence);
-		if(Input.getKeyDown(Input.KEY_COMMA))
-			load(largestFeature-20, persistence);
-		if(Input.getKeyDown(Input.KEY_SEMICOLON))
-			load(largestFeature, persistence+.1f);
-		if(Input.getKeyDown(Input.KEY_L))
-			load(largestFeature, persistence-.1f);
-		if(Input.getKeyDown(Input.KEY_LBRACKET))
-			if(viewRange > 0)
+		if(Input.isKeyPressed(Input.KEY_PERIOD))
+			load(data.largestFeature+20, data.persistence);
+		if(Input.isKeyPressed(Input.KEY_COMMA))
+			load(data.largestFeature-20, data.persistence);
+		if(Input.isKeyPressed(Input.KEY_SEMICOLON))
+			load(data.largestFeature, data.persistence+.1f);
+		if(Input.isKeyPressed(Input.KEY_L))
+			load(data.largestFeature, data.persistence-.1f);
+		if(Input.isKeyPressed(Input.KEY_LBRACKET))
+			if(viewRange > 1)
 				viewRange--;
-		if(Input.getKeyDown(Input.KEY_RBRACKET))
+		if(Input.isKeyPressed(Input.KEY_RBRACKET))
 			if(viewRange < 20)
 				viewRange++;
 	}
 	
-	public void render(float x, float y, float z)
+	public void update(Vector3f plr) // Aux Thread
 	{
-		for(int i = 0; i < chunks.length; i++)
-			for(int j = 0; j < chunks[0].length; j++)
-				if(withinRange(x, z, i * Chunk.size, j * Chunk.size))
-					if(chunks[i][j] != null)
-						chunks[i][j].renderGround();
-					else
-						loadChunk(i, j);
-				else
-					unloadChunk(i, j);
+		chunksLoaded = 0;
+		Chunk.updatePlrPos(plr);
+		playerPos = plr;
 		
-		for(int i = 0; i < chunks.length; i++)
-			for(int j = 0; j < chunks[0].length; j++)
-				if(withinRange(x, z, i * Chunk.size, j * Chunk.size))
-					if(chunks[i][j] != null)
-						chunks[i][j].renderFoliage(x, y, z);
-					else
+		for(int i = (int)plr.x / Chunk.size - viewRange; i < (int)plr.x / Chunk.size + viewRange; i++)
+			for(int j = (int)plr.z/ Chunk.size - viewRange; j < (int)plr.z/ Chunk.size + viewRange; j++)
+				if(withinRange(plr.x, plr.z, i * Chunk.size, j * Chunk.size))
+					if(getChunk(i * Chunk.size, j * Chunk.size) == null)
 						loadChunk(i, j);
-				else
-					unloadChunk(i, j);
+	}
+	
+	public void render(Transform transform) // Main Thread
+	{
+		Spritesheet.bind();
+		GL11.glDisable(GL11.GL_BLEND);
+		for(int i = chunks.size() - 1; i > 0; i--)
+		{				
+			if(!chunks.get(i).isCreated()) // Need to create in GL thread because we're uploading mesh data
+				chunks.get(i).create();
+			
+			chunks.get(i).render();
+			
+			if(!withinRange(playerPos.x, playerPos.z, chunks.get(i).getX(), chunks.get(i).getZ()))
+				unloadChunk(chunks.get(i)); // Similarly, we have to unload chunks in the GL thread
+		}
+		
+		skyboxShader.bind();
+		skyboxShader.setUniform("projectedTransform", transform.getProjectedTransformation());
+		Skybox.instance.setCenter(playerPos);
+		Skybox.instance.render();
+		
+		Spritesheet.bind();
+		
+		GL11.glEnable(GL11.GL_BLEND);
+		GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+		GL11.glDisable(GL11.GL_CULL_FACE);
+		
+		for(int i = chunks.size() - 1; i > 0; i--)
+			chunks.get(i).renderTransparency();
+		
+		GL11.glEnable(GL11.GL_CULL_FACE);
 	}
 	
 	private boolean withinRange(float x, float z, int i, int j)
@@ -110,23 +146,70 @@ public class World
 		return Math.sqrt((x-i)*(x-i)+(z-j)*(z-j)) < viewRange * Chunk.size;
 	}
 	
-	private Vector3f getWorldMap(int x, int z)
+	private float getWorldMap(int x, int z)
 	{
-		int x1 = (int)Math.floor(x/Chunk.size);
-		int z1 = (int)Math.floor(z/Chunk.size);
+		int x1 = (int)Math.floor(x/Chunk.size) * Chunk.size;
+		int z1 = (int)Math.floor(z/Chunk.size) * Chunk.size;
 		
-		if(chunks[x1][z1] != null)
-			return chunks[x1][z1].getMap(x%Chunk.size, z%Chunk.size);
+		if(x < 0)
+			x1-=Chunk.size;
 		
-		return new Vector3f(x, 0, z);
+		if(z < 0)
+			z1-=Chunk.size;
+		
+		Chunk chunk = getChunk(x1, z1);
+		
+		if(chunk != null)
+		{
+//			System.out.println("C(" + chunk.getX() + "," + chunk.getZ() + ") == [" + x + "," + z + "]");
+			int _x = x, _z = z;
+			
+			if(x < 0 || z < 0)
+			{
+				if(x < 0)
+				{
+					while(_x < 0)
+						_x += Chunk.size;
+					_z = _z%Chunk.size;
+				}
+				else
+				{
+					while(_z < 0)
+						_z += Chunk.size;
+					_x = _x%Chunk.size;
+				}
+			}
+			else
+			{
+				_x = _x%Chunk.size;
+				_z = _z%Chunk.size;
+			}
+				
+			
+			return chunk.getMap(_x , _z);
+		}
+		
+//		System.out.println("Error - [" + x + "," + z + "]");
+		return 0;
 	}
 	
-	private float getY(int x, int z)
+	private Chunk getChunk(int x, int z)
 	{
-		return getWorldMap(x, z).getY();
+		for(int i = chunks.size() - 1; i > 0; i--)
+			if(chunks.get(i).getX() == x && chunks.get(i).getZ() == z)
+				if(i < chunks.size() && i >= 0)
+					return chunks.get(i);
+		
+		return null;
 	}
 	
-	private float[] getYPos(float x, float z)
+	/**
+	 * Creates the vertices for the triangle the player is over
+	 * @param x
+	 * @param z
+	 * @return The triangle which the player is standing on
+	 */
+	private float[] getTriangle(float x, float z)
 	{
 		
 		float[] tmp = new float[3 * 3];
@@ -136,41 +219,48 @@ public class World
 		int zF = (int)Math.floor(z);
 		int zF1 = zF + 1;
 		
+//		System.out.println(" - BEGIN - ");
+//		System.out.println(playerPos.toString());
+		
 		if(x + z < xF + zF + 1)
 		{
 			tmp[0] = xF;
-			tmp[1] = getY(xF, zF);
+			tmp[1] = getWorldMap(xF, zF);
 			tmp[2] = zF;
 			tmp[3] = xF1;
-			tmp[4] = getY(xF1, zF);
+			tmp[4] = getWorldMap(xF1, zF);
 			tmp[5] = zF;
 			tmp[6] = xF;
-			tmp[7] = getY(xF, zF1);
+			tmp[7] = getWorldMap(xF, zF1);
 			tmp[8] = zF1;
 		}
 		else
 		{
 			tmp[0] = xF;
-			tmp[1] = getY(xF, zF1);
+			tmp[1] = getWorldMap(xF, zF1);
 			tmp[2] = zF1;
 			tmp[3] = xF1;
-			tmp[4] = getY(xF1, zF);
+			tmp[4] = getWorldMap(xF1, zF);
 			tmp[5] = zF;
 			tmp[6] = xF1;
-			tmp[7] = getY(xF1, zF1);
+			tmp[7] = getWorldMap(xF1, zF1);
 			tmp[8] = zF1;
 		}
+		
+//		System.out.println("@@ END");
 		
 		return tmp;
 	}
 	
-	public float getTriangleY(float x, float z, float defaultY)
-	{
-		
-		if(x >= width * Chunk.size - 1 || x <= 0 || z >= height * Chunk.size - 1 || z <= 0)
-			return defaultY;
-		
-		float[] points = getYPos(x, z);
+	/**
+	 * Computes a y value that is on the plane of the terrain triangle based on the x and z position
+	 * @param x
+	 * @param z
+	 * @return The y value
+	 */
+	public float getTriangleY(float x, float z)
+	{		
+		float[] points = getTriangle(x, z);
 		
 		float x1 = points[0];
 		float y1 = points[1];
@@ -191,22 +281,16 @@ public class World
 		
 		return (-d-a*x-c*z)/b;
 	}
-	
-	public float getNoise(int x, int z)
-	{
-		return (float)noise.getNoise(x, z) * multiplier;
-	}
-	
-	public float getFeatureNoise(int x, int z)
-	{
-		return (float)featureNoise.getNoise(x, z);
-	}
-	
+
 	public void dispose()
 	{
-		for(int i = 0; i < chunks.length; i++)
-			for(int j = 0; j < chunks[0].length; j++)
-				if(chunks[i][j] != null)
-					unloadChunk(i, j);
+		if(chunks.size() != 0)
+			for(int i = chunks.size()-1; i > 0; i--)
+				unloadChunk(chunks.get(i));
+	}
+	
+	public static Vector3f getPlayerPos()
+	{
+		return playerPos;
 	}
 }

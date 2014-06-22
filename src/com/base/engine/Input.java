@@ -155,7 +155,7 @@ public class Input
 		return Keyboard.isKeyDown(keyCode);
 	}
 	
-	public static boolean getKeyDown(int keyCode)
+	public static boolean isKeyPressed(int keyCode)
 	{
 		return getKey(keyCode) && !lastKeys[keyCode];
 	}

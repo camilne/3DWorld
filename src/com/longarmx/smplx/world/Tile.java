@@ -7,7 +7,8 @@ public class Tile
 {
 	
 	private static Tile[] tiles = new Tile[]{
-				new Tile(0, 0)
+				new Tile(0, 0),
+				new Tile(256, 0)
 	};
 	
 	private TextureRegion region;
@@ -19,6 +20,8 @@ public class Tile
 	
 	public static Tile getTile(int id)
 	{
+		if(id >= tiles.length) return null;
+		
 		return tiles[id];
 	}
 	

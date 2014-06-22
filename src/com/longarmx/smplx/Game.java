@@ -7,6 +7,8 @@ import static org.lwjgl.opengl.GL11.GL_SRC_ALPHA;
 import static org.lwjgl.opengl.GL11.glBlendFunc;
 import static org.lwjgl.opengl.GL11.glEnable;
 
+import org.lwjgl.opengl.Display;
+
 import com.base.engine.BaseLight;
 import com.base.engine.DirectionalLight;
 import com.base.engine.Input;
@@ -17,6 +19,7 @@ import com.base.engine.Transform;
 import com.base.engine.Vector3f;
 import com.base.engine.Window;
 import com.longarmx.smplx.gui.StringRenderer;
+import com.longarmx.smplx.world.Skybox;
 import com.longarmx.smplx.world.World;
 
 public class Game
@@ -29,8 +32,10 @@ public class Game
 	private Texture fontTexture;
 
 	private World world;
-	private Player player;
+	private volatile Player player;
 	private MainScreen hud;
+	
+	private Thread auxThread;
 	
 	public boolean gameFocusable = true;
 	
@@ -45,11 +50,12 @@ public class Game
 		player = new Player(world);
 		hud = new MainScreen();
 		
-		Transform.setProjection(70f, Window.getWidth(), Window.getHeight(), 0.1f, 1000f);
+		Transform.setProjection(70f, Window.getWidth(), Window.getHeight(), 0.1f, 5000f);
 		Transform.setCamera(player.getCamera());
 		
 		WorldShader.setAmbientLight(new Vector3f(3f, 3f, 3f));
-		WorldShader.setDirectionalLight(new DirectionalLight(new BaseLight(new Vector3f(1,1,1), 10f), new Vector3f(-1,-1,-1)));
+		WorldShader.setDirectionalLight(new DirectionalLight(new BaseLight(new Vector3f(1,1,1), 10f), new Vector3f(1,-1,-1)));
+
 		
 		fontTexture = new Texture("arista.png", GL_LINEAR, GL_LINEAR);
 		StringRenderer.create(fontTexture, "res/arista.fnt");
@@ -58,6 +64,31 @@ public class Game
 		
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		
+		auxThread = new Thread(new Runnable()
+		{
+
+			@Override
+			public void run()
+			{
+				while(true)
+				{
+					update();
+					
+					try
+					{
+						Thread.sleep(17);
+					} catch (InterruptedException e)
+					{
+						e.printStackTrace();
+					}
+					Display.sync(60);
+				}
+			}
+			
+		});
+		
+		auxThread.start();
 	}
 	
 	public void input()
@@ -66,11 +97,12 @@ public class Game
 		{
 			player.input();
 			world.input();
+			hud.input();
 		}
 		
-		if(Input.getKeyDown(Input.KEY_ESCAPE))
+		if(Input.isKeyPressed(Input.KEY_ESCAPE))
 			Main.instance.stop();
-		if(Input.getKeyDown(Input.KEY_LCONTROL))
+		if(Input.isKeyPressed(Input.KEY_LCONTROL))
 			Transform.setProjection(Transform.getFOV() - 40, Window.getWidth(), Window.getHeight(), 0.1f, 1000f);
 		else if(Input.getKeyUp(Input.KEY_LCONTROL))
 			Transform.setProjection(Transform.getFOV() + 40, Window.getWidth(), Window.getHeight(), 0.1f, 1000f);
@@ -81,21 +113,26 @@ public class Game
 		}
 	}
 
-	public void update()
+	public void update() // Aux
 	{	
 		if(gameFocusable)
 		{
-			player.update();
+			//player.update();
 			hud.update();
+			world.update(player.getPos());
 		}
+	}
+	
+	public void playerUpdate() // Main
+	{
+		player.update();
 	}
 	
 	public void render()
 	{
-		
 		worldShader.bind();
 		worldShader.updateUniforms(transform.getTransformation(), transform.getProjectedTransformation(), material);
-		world.render(player.getPos().getX(), player.getPos().getY(), player.getPos().getZ());
+		world.render(transform);
 		
 		hudShader.bind();
 		hudShader.updateUniforms(transform.getTransformation(), transform.getProjectedTransformation(), null);
@@ -109,6 +146,7 @@ public class Game
 		world.dispose();
 		Spritesheet.dispose();
 		hud.dispose();
+		Skybox.instance.dispose();
 	}
 
 }

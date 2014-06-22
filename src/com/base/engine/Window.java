@@ -34,13 +34,13 @@ public class Window
 		Main.MAJOR_VERSION = RenderUtil.getMajorVersion();
 		Main.MINOR_VERSION = RenderUtil.getMinorVersion();
 		
-		if(Main.MAJOR_VERSION < 3)
+		if(Main.MAJOR_VERSION < 3 && Main.MINOR_VERSION < 3)
 		{
 			try
 			{
 				Display.destroy();
 				Display.setFullscreen(fullscreen);
-				ContextAttribs attribs = new ContextAttribs(3, 2);
+				ContextAttribs attribs = new ContextAttribs(3, 3);
 				attribs.withProfileCore(true);
 				attribs.withForwardCompatible(true);
 				Display.create(new PixelFormat(), attribs);
@@ -48,7 +48,7 @@ public class Window
 			catch (LWJGLException e) 
 			{
 				e.printStackTrace();
-				System.err.println("OpenGL version: " + RenderUtil.getOpenGLVersion() + " not supported. Requires V:3.0");
+				System.err.println("OpenGL version: " + RenderUtil.getOpenGLVersion() + " not supported. Requires V:3.3");
 				System.exit(1);
 			}
 		}

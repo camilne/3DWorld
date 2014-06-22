@@ -22,34 +22,34 @@ public class Player
 		isFlying = false;
 		camera = new Camera();
 		camera.setPos(new Vector3f(10 * Chunk.size, 0, 10 * Chunk.size));
-		movementSpeed = 1;
+		movementSpeed = 0.01f;
 	}
 	
 	public void input()
 	{
 		if(Input.getKey(Input.KEY_Q))
-			movementSpeed = 10;
+			movementSpeed = 0.1f;
 		else if(Input.getKey(Input.KEY_LSHIFT))
-			movementSpeed = 0.25f;
+			movementSpeed = 0.0025f;
 		else
-			movementSpeed = 1;
+			movementSpeed = 0.01f;
 		
-		camera.setMovAmt((float)(10 * Time.getDelta() * movementSpeed));
+		camera.setMovAmt((float)(Time.getDelta() * movementSpeed));
 		camera.input();
 		
-		if(Input.getKeyDown(Input.KEY_E))
+		if(Input.isKeyPressed(Input.KEY_E))
 			isFlying = !isFlying;
 	}
 	
 	private void fall()
 	{
-		camera.getPos().setY(y - (float)Time.getDelta() * 10 * (Input.getKey(Input.KEY_Q) ? 10 : 1));
+		camera.getPos().setY(y - (float)Time.getDelta() * movementSpeed);
 	}
 	
 	private void collision()
 	{
 		if(!isFlying)
-			camera.getPos().setY(Math.max(camera.getPos().getY(), world.getTriangleY(x, z, y - 1) + 1));
+			camera.getPos().setY(Math.max(camera.getPos().getY(), world.getTriangleY(x, z) + 2));
 	}
 	
 	public void update()

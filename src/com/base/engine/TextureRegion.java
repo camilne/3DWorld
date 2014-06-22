@@ -7,7 +7,6 @@ public class TextureRegion
 	private float s, t, u, v, width, height;
 	private Vector2f st, ut, uv, sv;
 	private Texture texture;
-	private Mesh mesh;
 	
 	public TextureRegion(Texture texture, int x, int y, int width, int height)
 	{
@@ -27,35 +26,9 @@ public class TextureRegion
 		this.ut = new Vector2f(u, t);
 		this.uv = new Vector2f(u, v);
 		this.sv = new Vector2f(s, v);
-		
-		mesh = new Mesh(new Vertex[]{
-				new Vertex(new Vector3f(0, 0, 0), st),
-				new Vertex(new Vector3f(1, 0, 0), new Vector2f(u, t)),
-				new Vertex(new Vector3f(1, 1, 0), uv),
-				new Vertex(new Vector3f(0, 1, 0), new Vector2f(s, v))
-		}, new int[]
-				{
-				0, 1, 3,
-				1, 2, 3
-				});
+
 	}
-	
-	
-	
-	public void render(float x, float y, float z, float width, float height, boolean single)
-	{
-		texture.bind();
-		
-		mesh.updateVertices(new Vertex[]{
-				new Vertex(new Vector3f(x + width, y + height, z), new Vector2f(u, t)),
-				new Vertex(new Vector3f(x, y + height, z), new Vector2f(s, t)),
-				new Vertex(new Vector3f(x, y, z), new Vector2f(s, v)),
-				new Vertex(new Vector3f(x + width, y, z), new Vector2f(u, v))
-		}, false);
-		
-		mesh.draw();
-	}
-	
+
 	public void bind()
 	{
 		texture.bind();
